@@ -1,59 +1,56 @@
 import re
 import pandas as pd
-import json
 import configparser
 
 def clean_text(text):
     """
-    Cleans Amharic text by removing URLs, user mentions, and unwanted characters,
-    while preserving essential punctuation and Amharic script.
+    Cleans Amharic text by removing URLs, @mentions, and unwanted characters.
     """
     if not isinstance(text, str):
         return ""
-    # Remove URLs
-    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
-    # Remove user @mentions
-    text = re.sub(r'\@\w+', '', text)
-    # Remove characters that are not Amharic, numbers, or basic punctuation
-    # This keeps Amharic characters (U+1200 to U+137F), numbers, and some punctuation.
-    text = re.sub(r'[^\u1200-\u137F\s\d.,!?።]', '', text)
-    # Normalize whitespace to a single space
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text)  # Remove URLs
+    text = re.sub(r'\@\w+', '', text)  # Remove @mentions
+    text = re.sub(r'[^\u1200-\u137F\s\d.,!?።]', '', text)  # Keep Amharic, numbers, punctuation
+    text = re.sub(r'\s+', ' ', text).strip()  # Normalize whitespace
     return text
 
 def preprocess_raw_data():
     """
-    Loads raw data, cleans it, and saves it to a processed file.
+    Loads raw CSV, cleans the text field, removes media column, and saves all metadata + cleaned_text.
     """
     config = configparser.ConfigParser()
     config.read('config.ini')
 
-    raw_file = config['FILES']['RAW_DATA']
+    raw_file = config['FILES']['RAW_DATA']       # Should be a .csv file
     processed_file = config['FILES']['PROCESSED_DATA']
 
-    messages = []
-    with open(raw_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            messages.append(json.loads(line))
+    # Load CSV instead of JSONL
+    df = pd.read_csv(raw_file, encoding='utf-8')
 
-    if not messages:
-        print("No messages found in raw data file. Exiting.")
-        return
+    print(f"✅ Loaded {len(df)} messages from {raw_file}.")
 
-    df = pd.DataFrame(messages)
-    print(f"Loaded {len(df)} messages from {raw_file}.")
-
-    # Apply the cleaning function
+    # Clean text
     df['cleaned_text'] = df['text'].apply(clean_text)
 
-    # Keep only rows where cleaned_text is not empty
-    df = df[df['cleaned_text'] != '']
+    # Drop rows with empty cleaned text
+    df = df[df['cleaned_text'].str.strip() != '']
 
-    # Save to CSV
+    # Drop media_file column if it exists
+    if 'media_file' in df.columns:
+        df = df.drop(columns=['media_file'])
+
+    # Reorder columns for output
+    desired_columns = [
+        'channel', 'message_id', 'text', 'date',
+        'sender_id', 'sender_name', 'view_count',
+        'message_type', 'cleaned_text'
+    ]
+    # Filter only those that exist in the dataframe
+    df = df[[col for col in desired_columns if col in df.columns]]
+
+    # Save processed data
     df.to_csv(processed_file, index=False, encoding='utf-8')
-    print(f"Preprocessing complete. Saved {len(df)} cleaned messages to {processed_file}.")
-    print("\nSample of processed data:")
-    print(df[['text', 'cleaned_text']].head())
+    print(f"✅ Saved {len(df)} cleaned messages to {processed_file}.")
 
 if __name__ == '__main__':
     preprocess_raw_data()
