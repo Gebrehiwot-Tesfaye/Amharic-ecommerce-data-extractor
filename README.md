@@ -135,3 +135,45 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 For questions or support, please contact the development team.
+
+## Task 5: Model Interpretability
+
+For a detailed analysis of how our NER model makes decisions, including SHAP and LIME interpretability, difficult case analysis, and recommendations, see:
+
+**Summary:**
+
+- Applied SHAP and LIME to explain model predictions and entity extraction logic.
+- Analyzed difficult cases (e.g., ambiguous text, overlapping entities).
+- Provided actionable recommendations for improving model transparency and performance.
+
+Example visualizations and detailed findings are included in the linked report.
+
+## Task 6: Vendor Scorecard (Micro-Lending Vendor Analytics)
+
+This task generates a vendor analytics scorecard for micro-lending using Telegram e-commerce data. The process involves:
+
+1. **Generating NER-annotated posts:**
+
+   - Run the NER extraction script to create `data/vendor_posts_with_ner.csv`:
+     ```bash
+     python src/generate_vendor_posts_with_ner.py
+     ```
+   - This file contains: vendor, timestamp, views, text, product, price (NER-extracted).
+
+2. **Generating the Vendor Scorecard:**
+   - Run the scorecard engine to analyze vendor performance:
+     ```bash
+     python src/vendor_scorecard_engine.py
+     ```
+   - This prints a pretty table in the terminal and saves a real tabular CSV at `data/vendor_scorecard.csv`.
+
+**Metrics included:**
+
+- Posting frequency (posts/week)
+- Average views per post
+- Top performing post (product/price)
+- Average price point (from NER)
+- Composite Lending Score
+- Summary table comparing vendors
+
+See the output CSV for further analysis or reporting.
